@@ -9,6 +9,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.webkit.JavascriptInterface;
+import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
@@ -63,14 +64,12 @@ public class MainActivity extends ActionBarActivity {
         webview.getSettings().setLoadsImagesAutomatically(false);
         webview.getSettings().setLoadWithOverviewMode(true);
         webview.getSettings().setUseWideViewPort(true);
+        webview.setWebChromeClient(new WebChromeClient());
         webview.addJavascriptInterface(new MyJavaScriptInterface(this), "HtmlViewer");
 
         webview.setWebViewClient(new WebViewClient() {
             @Override
             public void onPageFinished(WebView view, String url) {
-                webview.loadUrl("javascript:alert(\"it worked!\");");
-                if (1==1)
-                    return;
                 webview.loadUrl("javascript:window.HtmlViewer.showHTML" +
                         "('<html>'+document.getElementsByTagName('html')[0].innerHTML+'</html>');");
             }
@@ -87,16 +86,35 @@ public class MainActivity extends ActionBarActivity {
         button2.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
 
+                webview.loadUrl("javascript:(function(){" +
+                        "l=$('a[data-venue_type_id=\"0\"]');" +
+                        "l.click();" +
+                        "})()");
+            }
+        });
 
+        final Button button3 = (Button) findViewById(R.id.button3);
+        button3.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                webview.loadUrl("https://tickets.rav-hen.co.il/");
+                if (1==1)
+                    return;
+                webview.loadUrl("javascript:(function(){" +
+                        "var k = document.querySelectorAll('a[class=\"presentationLink\"]');" +
+                        "for ( var i = 0; i < k.length; i++) {"+
+                        "      k[1].click();" +
+                        "    }" +
+                        "})()");
 
-                webview.loadUrl("javascript:(function(){"+
-                        "alert(\"it worked!\"})()");
-
-                webview.loadUrl("javascript:(function(){"+
-                        "l=$('*[data-site_id=\"1010403\"]');"+
-                        "e=document.createEvent('HTMLEvents');"+
-                        "e.initEvent('click',true,true);"+
-                        "l.dispatchEvent(e);"+
+                if (1==1)
+                    return;
+                webview.loadUrl("javascript:(function(){" +
+                        "l=$('*[data-prsnt_code=\"6531032715-75327\"]');" +
+                        "alert(l);" +
+                        "})()");
+                webview.loadUrl("javascript:(function(){" +
+                        "l=$('*[data-prsnt_code=\"6531032715-75327\"]');" +
+                        "l.click();" +
                         "})()");
             }
         });
@@ -114,9 +132,14 @@ public class MainActivity extends ActionBarActivity {
 
         @JavascriptInterface
         public void showHTML(String html) {
+            Log.w("--------------------html-------------------",html);
             Document doc = Jsoup.parse(html);
             //  GetMovieTitles(doc);
-            Element cinemaSelect = doc.select("div.jspPane").first();
+            Element cinemaSelect = doc.select("a.presentationLink").first();
+            if (cinemaSelect == null)
+                return;
+
+
 
             if (1==1)
             return;
