@@ -1,34 +1,129 @@
 package com.example.bubba.nexttrycinemaviewer;
 
-import android.app.AlertDialog;
 import android.content.Context;
-import android.support.v7.app.ActionBarActivity;
+import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.support.v7.app.ActionBarActivity;
+import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceResponse;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.TextView;
-
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.xwalk.core.XWalkResourceClient;
+import org.xwalk.core.XWalkView;
+import org.xwalk.core.internal.XWalkViewInternal;
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 public class MainActivity extends ActionBarActivity {
 
-    public ArrayList<String> MovieNames = new ArrayList<>();
-    public ArrayList<Cinema> Cinemas = new ArrayList<>();
-    WebView webview;
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        final XWalkView viewById = (XWalkView) findViewById(R.id.xwalkWebView);
+        viewById.setResourceClient(new ResourceClient(viewById));
+        viewById.setVisibility(View.VISIBLE);
+
+        final Button buttonnn = (Button) findViewById(R.id.button);
+
+        final WebView webView = (WebView) findViewById(R.id.webView);
+
+        final TextView textView = (TextView) findViewById(R.id.textView2);
+
+        webView.addJavascriptInterface(new MyJavaScriptInterface(this), "HtmlViewer");
+        ChangeLoadImages(true);
+        webView.setVisibility(View.GONE);
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                webView.loadUrl("javascript:window.HtmlViewer.showHTML" +
+                        "('<html>'+document.getElementsByTagName('html')[0].innerHTML+'</html>',document.URL);");
+            }
+
+            @Override
+            public void onPageStarted (WebView view, String url, Bitmap favicon)
+            {
+                    Log.e("Started loading", url);
+            }
+        });
+        webView.getSettings().setLoadsImagesAutomatically(false);
+        webView.getSettings().setJavaScriptEnabled(true);
+        webView.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
+        webView.setWebChromeClient(new WebChromeClient());
+        textView.setMovementMethod(new ScrollingMovementMethod());
+
+        buttonnn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.w("ggegege","gegegege");
+              //  viewById.load("http://tickets.yesplanet.co.il/ypa?key=1025", null);
+                ClearText();
+                ChangeAddress("http://tickets.yesplanet.co.il/ypa?key=1025");
+            }
+        });
+    }
+
+    public void ChangeAddress(final String url)
+    {
+        final WebView webView = (WebView) findViewById(R.id.webView);
+        webView.post(new Runnable() {
+            public void run() {
+                Log.e("Change adress to:  ",url);
+                CookieManager cookieManager = CookieManager.getInstance();
+                webView.loadUrl(url);
+            }
+        });
+    }
+
+    public void AddText(final String text)
+    {
+        final TextView textView = (TextView) findViewById(R.id.textView2);
+        textView.post(new Runnable() {
+            public void run() {
+                textView.append(text);
+            }
+        });
+    }
+
+    public void ClearText()
+    {
+        final TextView textView = (TextView) findViewById(R.id.textView2);
+        textView.post(new Runnable() {
+            public void run() {
+                textView.setText("");
+            }
+        });
+    }
+
+    public void ChangeLoadImages(final Boolean IsloadImages)
+    {
+        final WebView webView = (WebView) findViewById(R.id.webView);
+        webView.post(new Runnable() {
+            public void run() {
+                webView.getSettings().setLoadsImagesAutomatically(IsloadImages);
+            }
+        });
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -52,78 +147,13 @@ public class MainActivity extends ActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
-        webview =(WebView) findViewById(R.id.webView);
-
-
-        webview.getSettings().setJavaScriptEnabled(true);
-        webview.getSettings().setLoadsImagesAutomatically(false);
-        webview.getSettings().setLoadWithOverviewMode(true);
-        webview.getSettings().setUseWideViewPort(true);
-        webview.setWebChromeClient(new WebChromeClient());
-        webview.addJavascriptInterface(new MyJavaScriptInterface(this), "HtmlViewer");
-
-        webview.setWebViewClient(new WebViewClient() {
-            @Override
-            public void onPageFinished(WebView view, String url) {
-                webview.loadUrl("javascript:window.HtmlViewer.showHTML" +
-                        "('<html>'+document.getElementsByTagName('html')[0].innerHTML+'</html>');");
-            }
-        });
-
-        final Button button = (Button) findViewById(R.id.button);
-        button.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                webview.loadUrl("http://www.rav-hen.co.il/cinemas");
-            }
-        });
-
-        final Button button2 = (Button) findViewById(R.id.button2);
-        button2.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-
-                webview.loadUrl("javascript:(function(){" +
-                        "l=$('a[data-venue_type_id=\"0\"]');" +
-                        "l.click();" +
-                        "})()");
-            }
-        });
-
-        final Button button3 = (Button) findViewById(R.id.button3);
-        button3.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                webview.loadUrl("https://tickets.rav-hen.co.il/");
-                if (1==1)
-                    return;
-                webview.loadUrl("javascript:(function(){" +
-                        "var k = document.querySelectorAll('a[class=\"presentationLink\"]');" +
-                        "for ( var i = 0; i < k.length; i++) {"+
-                        "      k[1].click();" +
-                        "    }" +
-                        "})()");
-
-                if (1==1)
-                    return;
-                webview.loadUrl("javascript:(function(){" +
-                        "l=$('*[data-prsnt_code=\"6531032715-75327\"]');" +
-                        "alert(l);" +
-                        "})()");
-                webview.loadUrl("javascript:(function(){" +
-                        "l=$('*[data-prsnt_code=\"6531032715-75327\"]');" +
-                        "l.click();" +
-                        "})()");
-            }
-        });
-
-
-    }
 
     class MyJavaScriptInterface {
-
+        final TextView textView = (TextView) findViewById(R.id.textView2);
+        public List ScreeningUrlsJavscript = new ArrayList<String>();
+        public List ScreeningUrlsAbsolute = new ArrayList<String>();
+        String ScreeningIndexURl;
+        Boolean isInitilized = false;
         private Context ctx;
 
         MyJavaScriptInterface(Context ctx) {
@@ -131,43 +161,115 @@ public class MainActivity extends ActionBarActivity {
         }
 
         @JavascriptInterface
-        public void showHTML(String html) {
-            Log.w("--------------------html-------------------",html);
-            Document doc = Jsoup.parse(html);
-            //  GetMovieTitles(doc);
-            Element cinemaSelect = doc.select("a.presentationLink").first();
-            if (cinemaSelect == null)
-                return;
+        public void showHTML(final String html, String Url) {
 
-
-
-            if (1==1)
-            return;
-
-            Elements cinemaElems = doc.select("td.cinema_info");
-            for (final Element cinemaElem : cinemaElems) {
-                Element cinemaLink = cinemaElem.select("a").first();
-                Cinema cinema = new Cinema();
-                cinema.Name = cinemaLink.text();
-                doc.setBaseUri("http://www.rav-hen.co.il");
-                String Url = cinemaLink.attr("abs:href");
-                cinema.Url = Url;
-                Cinemas.add(cinema);
+            if (Url.contains("TicketingTodaysEventsPage")) {
+                ScreeningIndexURl= Url;
+                if (!isInitilized) {
+                    Document parse = Jsoup.parse(html);
+                    Elements viewingLinks = parse.select("td.CinemaSelectEventPage_Events_Table_DateTimeCell_General > a");
+                    for (Element item : viewingLinks) {
+                        ScreeningUrlsJavscript.add(item.attr("href"));
+                    }
+                   // ScreeningUrlsJavscript = new ArrayList<String>(ScreeningUrlsJavscript.subList(1, 4));
+                    isInitilized =true;
+                }
+                if (ScreeningUrlsJavscript.size()>0)
+                {
+                    String SitsUrl = (String) ScreeningUrlsJavscript.get(0);
+                    ScreeningUrlsJavscript.remove(0);
+                    ChangeAddress(SitsUrl);
+                }
+                else
+                {
+                    AddText("DONE!!!");
+                    Log.e("Notice!", "DONE!!!");
+                }
             }
-                //  webview.loadUrl("javascript:getElementById('button_submit').click();");
+
+            else if (Url.contains("SelectSeatPage2"))
+            {
+                new Thread()
+                {
+                    public void run() {
+                        StringBuilder seatLocations = new StringBuilder();
+                        seatLocations.append('\n');
+                        Document sitPage = Jsoup.parse(html);
+                        AddText("Name:" + sitPage.select("a.General_Result_Text").first().text());
+                        AddText("Date:"+ sitPage.select("span.SessionInformation_Label_DateTime").first().text());
+                        AddText("Location:" + sitPage.select("span.SessionInformation_Label_Site").first().text());
+                        Elements select = sitPage.select("div.seat");
+                        int RowNum = 1;
+                        for (Element item : select) {
+                            Matcher cssMatcher = Pattern.compile("_Seat_(.*)_").matcher(item.attr("id"));
+                            if (cssMatcher.find())
+                            {
+                                int currRowNum = Integer.parseInt(cssMatcher.group(1));
+                                if (currRowNum != RowNum)
+                                {
+                                    seatLocations.append('\n');
+                                    RowNum =currRowNum;
+                                }
+                            }
+                            if (item.hasAttr("onclick"))
+                            {
+                                seatLocations.append('O');
+                            }
+                            else
+                            {
+                                seatLocations.append('X');
+                            }
+                        }
+                        AddText(seatLocations.toString());
+                    }
+                }.start();
+                ChangeAddress(ScreeningIndexURl);
+
+            }
         }
     }
+}
 
-    private void GetMovieTitles(Document doc) {
-        Elements select = doc.select("li.featureItem");
-        String movieList = "";
-        final TextView textView = (TextView) findViewById(R.id.textView2);
-        for (final Element elem :select)
+    class ScreeningInfo
+    {
+        String MovieTitle;
+        String Time;
+        SeatStatus [][] SeatStatus;
+    }
+
+    enum SeatStatus
+    {
+        Avaialable,
+        Occupied,
+        Handicapped_Avaialable,
+        Handicapped_Occupied,
+        Missing
+    }
+class ResourceClient extends XWalkResourceClient {
+
+    public ResourceClient(XWalkView xwalkView) {
+        super(xwalkView);
+    }
+
+    public void onLoadStarted(XWalkView view, String url) {
+        super.onLoadStarted(view, url);
+        Log.d("blah", "Load Started:" + url);
+    }
+
+    public void onLoadFinished(XWalkView view, String url) {
+        super.onLoadFinished(view, url);
+        Log.d("blah", "Load Finished:" + url);
+    }
+
+    public boolean shouldOverrideUrlLoading(XWalkView view, String url){
+        Log.e("should shoudld",url);
+        if (url.contains("jpg"))
         {
-            final String title = elem.select("span.featureTitle").first().text();
-
-            MovieNames.add(title);
+            Log.e("should intercept"," should intercept");
+            return true;
         }
+        return false;
     }
+
 }
 
